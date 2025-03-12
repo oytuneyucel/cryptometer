@@ -12,28 +12,37 @@ import useFetchHistoricData from "../../hooks/useFetchHistoricData.hook";
 import columns from "./columns";
 import MobileView from "./mobile-view";
 import { useRealTimeData } from "../../hooks/useRealTimeData.hook";
+import SearchBar from "../SearchBar";
+import DeleteButton from "../DeleteButton";
+import useLocalStorage from "../../hooks/useLocalStorage.hook";
+import useIsMobile from "../../hooks/useIsMobile";
 
-const symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "MBLUSDT"];
+// Default symbols to show if no saved data
+const DEFAULT_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "MBLUSDT"];
 
 const CryptoTable: React.FC = () => {
+  const [editMode, setEditMode] = useState(false);
+  const [savedSymbols, setSavedSymbols] = useLocalStorage<string[]>("crypto_symbols", DEFAULT_SYMBOLS);
   const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const isMobile = useIsMobile();
+
   const isConnected = useRef(false);
 
   const {
     historicData,
     loading: historicDataLoading,
     error: historicDataError,
-  } = useFetchHistoricData(symbols);
+  } = useFetchHistoricData(savedSymbols);
 
   const {
     data,
     readyState,
     error: realtimeError,
     connect: connectWebSocket,
-  } = useRealTimeData(symbols);
+  } = useRealTimeData(savedSymbols);
 
   const handleConnect = useCallback(() => {
     if (!isConnected.current && readyState === ReadyState.OPEN) {
@@ -100,8 +109,48 @@ const CryptoTable: React.FC = () => {
     }
   }, [historicDataError, realtimeError]);
 
+  // Handler for adding a new cryptocurrency
+  const handleAddCrypto = (symbol: string) => {
+    // Don't add if already in the list
+    if (savedSymbols.includes(symbol)) {
+      alert(`${symbol} is already in your watchlist.`);
+      return;
+    }
+    
+    // Add to savedSymbols which will trigger a refresh of the data
+    setSavedSymbols([...savedSymbols, symbol]);
+  };
+
+  // Handler for removing a cryptocurrency
+  const handleRemoveCrypto = (symbol: string) => {
+    const newSymbols = savedSymbols.filter(s => s !== symbol);
+    setSavedSymbols(newSymbols);
+    
+    // Also remove from current data
+    setCryptoData(prevData => prevData.filter(crypto => crypto.symbol !== symbol));
+  };
+
+  // Toggle edit mode
+  const toggleEditMode = () => {
+    setEditMode(!editMode);
+  };
+
+  // Create table with delete column if in edit mode
+  const tableColumns = editMode 
+    ? [...columns, {
+        id: 'actions',
+        header: 'Actions',
+        cell: (info: any) => (
+          <DeleteButton 
+            symbol={info.row.original.symbol}
+            onDelete={handleRemoveCrypto}
+          />
+        ),
+      }] 
+    : columns;
+
   const dataTable = useReactTable({
-    columns: columns,
+    columns: tableColumns,
     data: cryptoData,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -122,6 +171,21 @@ const CryptoTable: React.FC = () => {
 
   return (
     <div className="relative bg-white shadow-lg sm:rounded-3xl overflow-hidden">
+      <div className="px-4 pt-4">
+        {!isMobile &&
+        <div className="flex justify-end items-center mb-4">
+          <button 
+            onClick={toggleEditMode}
+            className={`px-3 py-1 rounded text-sm font-medium ${
+              editMode ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            {editMode ? 'Done' : 'Edit'}
+          </button>
+        </div>}
+        <SearchBar onAddCrypto={handleAddCrypto} />
+      </div>
+
       <div className="overflow-x-auto hidden sm:block">
         <table className="min-w-full bg-white">
           <thead className="bg-gray-200">
@@ -162,8 +226,13 @@ const CryptoTable: React.FC = () => {
         </table>
       </div>
 
-      <MobileView data={cryptoData} />
-      <div className="p-4 flex justify-around">
+      <MobileView 
+        data={cryptoData} 
+        onDelete={handleRemoveCrypto} 
+        editMode={editMode} 
+      />
+      
+      <div className="p-4 flex justify-around sticky">
         <div className="text-left text-sm text-gray-600">
           Last update: {lastUpdate?.toLocaleTimeString()}
         </div>
