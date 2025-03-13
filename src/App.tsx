@@ -16,9 +16,19 @@ const App: React.FC = () => {
             <span 
               key={index}
               className="inline-block"
-              style={{
+              style={isMobile ? {
                 fontSize: isMobile ? 50 : 80,
-                
+                background: 'linear-gradient(-45deg, #ff7e5f, #feb47b, #ffcb80, #ff7e5f)',
+                backgroundSize: '300% 300%',
+                WebkitBackgroundClip: 'text',
+
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 0 15px rgba(255, 255, 255, 0.)',
+                animation: `bounce-letter 0.5s ease infinite alternate, gradient 3s ease infinite`,
+                animationDelay: `${index * 0.1}s`
+              } : {
+                fontSize: isMobile ? 50 : 80,
+
                 animation: `bounce-letter 0.5s ease infinite alternate, gradient 3s ease infinite`,
                 animationDelay: `${index * 0.1}s`
               }}
