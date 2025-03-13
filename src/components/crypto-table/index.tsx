@@ -16,6 +16,7 @@ import SearchBar from "../SearchBar";
 import DeleteButton from "../DeleteButton";
 import useLocalStorage from "../../hooks/useLocalStorage.hook";
 import useIsMobile from "../../hooks/useIsMobile";
+import AdsComponent from "../ads/ads";
 
 // Default symbols to show if no saved data
 const DEFAULT_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "MBLUSDT"];
@@ -238,6 +239,7 @@ const CryptoTable: React.FC = () => {
         </div>
         <SocketStatus status={readyState} error={error} />
       </div>
+      <AdsComponent adSlot='X7XXXXXX5X' adClient="ca-pub-7299310344858812" adFormat="auto" />
     </div>
   );
 };
