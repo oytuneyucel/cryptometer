@@ -31,6 +31,9 @@ const useFetchHistoricData = (symbols: string[]) => {
               prevHigh: [parseFloat(d.highPrice)],
               prevLow: [parseFloat(d.lowPrice)],
               priceChange: 0,
+              priceChangePercent: parseFloat(d.priceChangePercent),
+              volume: parseFloat(d.volume),
+              quoteVolume: parseFloat(d.quoteVolume),
             } as CryptoData;
           })
         );

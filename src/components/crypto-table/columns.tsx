@@ -1,6 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { CryptoData } from "../../interfaces/crypto.interface";
-import { formatPrice } from "../../utils/text-formatter";
+import { formatPrice, formatVolume } from "../../utils/text-formatter";
 
 const columns: ColumnDef<CryptoData>[] = [
   {
@@ -30,6 +30,32 @@ const columns: ColumnDef<CryptoData>[] = [
             <span className="ml-2 text-blue-600">↓</span>
           )}
         </div>
+      </div>
+    ),
+  },
+  {
+    header: "24h Change",
+    accessorKey: "priceChangePercent",
+    cell: ({ row }) => {
+      const changePercent = row.getValue("priceChangePercent") as number;
+      return (
+        <div
+          className={`font-semibold ${
+            changePercent >= 0 ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {changePercent >= 0 ? "+" : ""}
+          {changePercent.toFixed(2)}%
+        </div>
+      );
+    },
+  },
+  {
+    header: "24h Volume",
+    accessorKey: "volume",
+    cell: ({ cell }) => (
+      <div className="text-sm text-gray-700">
+        {formatVolume(cell.getValue() as number)}
       </div>
     ),
   },
