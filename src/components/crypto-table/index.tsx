@@ -21,6 +21,8 @@ import useIsMobile from "../../hooks/useIsMobile";
 import AdsComponent from "../ads/ads";
 import PriceAlerts from "../PriceAlerts";
 import PortfolioTracker from "../PortfolioTracker";
+import DataExportImport from "../DataExportImport";
+import AdvancedSettingsComponent from "../AdvancedSettings";
 import { usePriceAlerts } from "../../hooks/usePriceAlerts.hook";
 import { usePortfolio } from "../../hooks/usePortfolio.hook";
 
@@ -172,6 +174,13 @@ const CryptoTable: React.FC = () => {
     setCryptoData(prevData => prevData.filter(crypto => crypto.symbol !== symbol));
   };
 
+  // Handler for importing watchlist
+  const handleImportWatchlist = (symbols: string[]) => {
+    // Merge with existing symbols, removing duplicates
+    const uniqueSymbols = Array.from(new Set([...savedSymbols, ...symbols]));
+    setSavedSymbols(uniqueSymbols);
+  };
+
   // Toggle edit mode
   const toggleEditMode = () => {
     setEditMode(!editMode);
@@ -253,6 +262,13 @@ const CryptoTable: React.FC = () => {
             portfolioValue={calculatePortfolioValue(currentPrices)}
             totalProfitLoss={calculateTotalProfitLoss(currentPrices)}
           />
+          
+          <DataExportImport
+            watchlist={savedSymbols}
+            onImportWatchlist={handleImportWatchlist}
+          />
+          
+          <AdvancedSettingsComponent />
         </div>
       </div>
 
