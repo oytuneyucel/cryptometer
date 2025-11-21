@@ -16,5 +16,22 @@ export const formatPrice = (price: number): string =>
       : price.toFixed(2)
   }`;
 
+/**
+ * Format large volume numbers with K, M, B suffixes for readability
+ * 
+ * @param {number} volume - The volume to format.
+ * @returns {string} - The formatted volume as a string.
+ */
+export const formatVolume = (volume: number): string => {
+  if (volume >= 1_000_000_000) {
+    return `${(volume / 1_000_000_000).toFixed(2)}B`;
+  } else if (volume >= 1_000_000) {
+    return `${(volume / 1_000_000).toFixed(2)}M`;
+  } else if (volume >= 1_000) {
+    return `${(volume / 1_000).toFixed(2)}K`;
+  }
+  return volume.toFixed(2);
+};
+
 export const generateSymbolsQuery = (symbols: string[]): string =>
   `["${symbols.join(`","`)}"]`;

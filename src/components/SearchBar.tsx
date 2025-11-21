@@ -12,10 +12,10 @@ const SearchBar: React.FC<SearchBarProps> = ({ onAddCrypto }) => {
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Common cryptocurrencies for suggestions
-  const commonCryptos = [
+  const commonCryptos = React.useMemo(() => [
     "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", 
     "ADAUSDT", "DOGEUSDT", "SHIBUSDT", "DOTUSDT", "LINKUSDT"
-  ];
+  ], []);
 
   // Hide suggestions when clicking outside
   useEffect(() => {
@@ -45,7 +45,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onAddCrypto }) => {
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, commonCryptos]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

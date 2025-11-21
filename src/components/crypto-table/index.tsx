@@ -3,6 +3,8 @@ import { ReadyState } from "react-use-websocket";
 import {
   useReactTable,
   getCoreRowModel,
+  getSortedRowModel,
+  SortingState,
   flexRender,
 } from "@tanstack/react-table";
 
@@ -17,6 +19,12 @@ import DeleteButton from "../DeleteButton";
 import useLocalStorage from "../../hooks/useLocalStorage.hook";
 import useIsMobile from "../../hooks/useIsMobile";
 import AdsComponent from "../ads/ads";
+import PriceAlerts from "../PriceAlerts";
+import PortfolioTracker from "../PortfolioTracker";
+import DataExportImport from "../DataExportImport";
+import AdvancedSettingsComponent from "../AdvancedSettings";
+import { usePriceAlerts } from "../../hooks/usePriceAlerts.hook";
+import { usePortfolio } from "../../hooks/usePortfolio.hook";
 
 // Default symbols to show if no saved data
 const DEFAULT_SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "ADAUSDT", "MBLUSDT"];
@@ -28,9 +36,37 @@ const CryptoTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const isMobile = useIsMobile();
 
   const isConnected = useRef(false);
+
+  // Get current prices for alerts and portfolio
+  const currentPrices = cryptoData.reduce((acc, crypto) => {
+    acc[crypto.symbol] = crypto.lastPrice;
+    return acc;
+  }, {} as { [symbol: string]: number });
+
+  // Price alerts
+  const {
+    alerts,
+    addAlert,
+    removeAlert,
+    toggleAlert,
+    resetAlert,
+    requestNotificationPermission,
+    notificationPermission,
+  } = usePriceAlerts(currentPrices);
+
+  // Portfolio tracking
+  const {
+    holdings,
+    addHolding,
+    updateHolding,
+    removeHolding,
+    calculatePortfolioValue,
+    calculateTotalProfitLoss,
+  } = usePortfolio();
 
   const {
     historicData,
@@ -84,10 +120,17 @@ const CryptoTable: React.FC = () => {
               crypto.low = newPrice;
               crypto.prevLow = [...prevLow, low];
             }
+            
+            const priceChange = parseFloat(newPrice) - lastPrice;
+            const priceChangePercent = lastPrice !== 0 
+              ? (priceChange / lastPrice) * 100 
+              : 0;
+            
             return {
               ...crypto,
               lastPrice: parseFloat(newPrice),
-              priceChange: parseFloat(newPrice) - lastPrice,
+              priceChange,
+              priceChangePercent,
             };
           }
           return crypto;
@@ -131,6 +174,13 @@ const CryptoTable: React.FC = () => {
     setCryptoData(prevData => prevData.filter(crypto => crypto.symbol !== symbol));
   };
 
+  // Handler for importing watchlist
+  const handleImportWatchlist = (symbols: string[]) => {
+    // Merge with existing symbols, removing duplicates
+    const uniqueSymbols = Array.from(new Set([...savedSymbols, ...symbols]));
+    setSavedSymbols(uniqueSymbols);
+  };
+
   // Toggle edit mode
   const toggleEditMode = () => {
     setEditMode(!editMode);
@@ -154,6 +204,11 @@ const CryptoTable: React.FC = () => {
     columns: tableColumns,
     data: cryptoData,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
   });
 
   if (loading) {
@@ -185,6 +240,36 @@ const CryptoTable: React.FC = () => {
           </button>
         </div>}
         <SearchBar onAddCrypto={handleAddCrypto} />
+        
+        {/* Advanced Features */}
+        <div className="space-y-3 mb-4">
+          <PriceAlerts
+            alerts={alerts}
+            onAddAlert={addAlert}
+            onRemoveAlert={removeAlert}
+            onToggleAlert={toggleAlert}
+            onResetAlert={resetAlert}
+            notificationPermission={notificationPermission}
+            onRequestPermission={requestNotificationPermission}
+          />
+          
+          <PortfolioTracker
+            holdings={holdings}
+            currentPrices={currentPrices}
+            onAddHolding={addHolding}
+            onUpdateHolding={updateHolding}
+            onRemoveHolding={removeHolding}
+            portfolioValue={calculatePortfolioValue(currentPrices)}
+            totalProfitLoss={calculateTotalProfitLoss(currentPrices)}
+          />
+          
+          <DataExportImport
+            watchlist={savedSymbols}
+            onImportWatchlist={handleImportWatchlist}
+          />
+          
+          <AdvancedSettingsComponent />
+        </div>
       </div>
 
       <div className="overflow-x-auto hidden sm:block">
@@ -196,12 +281,19 @@ const CryptoTable: React.FC = () => {
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider"
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-300"
+                      onClick={header.column.getToggleSortingHandler()}
                     >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                      <div className="flex items-center">
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        {{
+                          asc: ' 🔼',
+                          desc: ' 🔽',
+                        }[header.column.getIsSorted() as string] ?? null}
+                      </div>
                     </th>
                   ))}
                 </tr>
